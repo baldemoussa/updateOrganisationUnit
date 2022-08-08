@@ -4,45 +4,60 @@ const fs = require('fs');
 const csv = require('csv-parser');
 
 const run = () => {
-  const username = process.env.USER
-  const password = process.env.PASS
+  const Authorization = process.env.Authorization
+  //const password = process.env.PASS
   console.log('Traitement en cours ...');
   const datas = [];
-  //Parcour et chargement du fichier CSV dans le tableau datas
-  fs.createReadStream('./fileData/data.csv').pipe(csv()).on('data', (row) => {
-    datas.push(row);
-    //fin du chargement du fichier
-  }).on('end', async () => {
-    //parcour du tableau pour correction dans le système
-    for (let index = 0; index < datas.length; index++) {
-      const ligne = datas[index];
-      try {
+  try {
+    //Parcour et chargement du fichier CSV dans le tableau datas  
+    fs.createReadStream('./fileData/data.csv').pipe(csv()).on('data', (row) => {
+      datas.push(row);
+      //fin du chargement du fichier
+    }).on('end', async () => {
+      //parcour du tableau pour correction dans le système
+      for (let index = 0; index < datas.length; index++) {
+        let result = {};
+        const ligne = datas[index];
         //authentification et recuperation de l'objet a corriger
-        axios.get(`${process.env.API_SOURCE}api/trackedEntityInstances/${ligne.tei}/?ou=Ky2CzFdfBuO;odY5MzWb1jc&program=c9m3ufPy8D6&&eventStartDate=2022-07-16&eventEndDate=2022-07-30&fields=*&pageSize=2`, {
-          auth: {
-            username: username,
-            password: password
+        //axios.get(`${process.env.API_SOURCE}api/trackedEntityInstances/${ligne.tei}/?ou=Ky2CzFdfBuO;odY5MzWb1jc&program=c9m3ufPy8D6&eventStartDate=2022-07-16&eventEndDate=2022-07-30&fields=*&pageSize=2`, {
+        axios.get(`${process.env.API_SOURCE}api/trackedEntityInstances/${ligne.tei}.json?program=c9m3ufPy8D6&fields=*`, {
+            headers: {
+            'Authorization': Authorization,
+            'Content-Type': 'application/json'
           }
         })
           .then(response => {
-            const result = response.data;
-            if (result.enrollments) {
-              if (result.enrollments.events) {
-                if (result.enrollments.events.length == 1 & result.orgUnit !== ligne.bonOrganisationUnit) {
+            result = response.data;
+            //console.log(result.enrollments.length);
+            if (result.enrollments.length != 0) {
+              if (result.enrollments[0].events.length != 0) {
+                if (result.enrollments[0].events.length == 1) {
                   //mise à jour de l'oganisation unit niveau 
                   result.orgUnit = ligne.bonOrganisationUnit;
+
+                  for (let j = 0; j < result.programOwners.length; j++) {
+                    result.programOwners[j].ownerOrgUnit = ligne.bonOrganisationUnit;
+                  }
                   result.enrollments[0].orgUnit = ligne.bonOrganisationUnit;
                 }
-                //mise à jour sur la dernière dose saisie              
-                result.enrollments.events[result.enrollments.events.length - 1].orgUnit = ligne.bonOrganisationUnit;
+                //console.log(result.programOwners[0])
+                //mise à jour de l'event saisie dans la periode  
+                for (let i = 0; i < result.enrollments[0].events.length; i++) {
+                  //console.log(result.enrollments[0].events[i].eventDate.includes('2022-07'));
+                  if (result.enrollments[0].events[i].eventDate.includes('2022-07')) {
+                    result.enrollments[0].events[i].orgUnit = ligne.bonOrganisationUnit;
+                  }
+                }
               }
             }
+            //console.log(result);
             //envoi de la modification
-            axios.put(`${process.env.API_SOURCE}api/api/trackedEntityInstances/${ligne.tei}`, JSON.stringify(result),
+            axios.post(`${process.env.API_SOURCE}api/trackedEntityInstances`, JSON.stringify(result),
+              //(`${process.env.API_SOURCE}api/trackedEntityInstances`, JSON.stringify(result),
               {
-                auth: {
-                  username: username,
-                  password: password
+                headers: {
+                  'Authorization': Authorization,
+                  'Content-Type': 'application/json'
                 }
               })
               .then(response => {
@@ -51,7 +66,7 @@ const run = () => {
               })
               .catch(err => {
                 console.log(result.trackedEntityInstance + " NOT OK")
-                console.log(err)
+                //console.log(err)
               })
           }
           )
@@ -60,9 +75,12 @@ const run = () => {
             console.log(err);
           });
       }
+      //  }
+    }
+    )
+    //console.log('Fin de traitement');
+  } catch (error) {
+    console.error(error);
   }
-  }
-  )
-  console.log('Fin de traitement');
 }
 run();
