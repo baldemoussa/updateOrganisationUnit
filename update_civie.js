@@ -10,7 +10,7 @@ const run = () => {
   const datas = [];
   try {
     //Parcour et chargement du fichier CSV dans le tableau datas  
-    fs.createReadStream('./fileData/data.csv').pipe(csv()).on('data', (row) => {
+    fs.createReadStream('./fileData/dataCivie.csv').pipe(csv()).on('data', (row) => {
       datas.push(row);
       //fin du chargement du fichier
     }).on('end', async () => {
@@ -28,28 +28,15 @@ const run = () => {
         })
           .then(response => {
             result = response.data;
-            //console.log(result.enrollments.length);
-            if (result.enrollments.length != 0) {
-              if (result.enrollments[0].events.length != 0) {
-                if (result.enrollments[0].events.length == 1) {
-                  //mise à jour de l'oganisation unit niveau 
-                  result.orgUnit = ligne.bonOrganisationUnit;
-
-                  for (let j = 0; j < result.programOwners.length; j++) {
-                    result.programOwners[j].ownerOrgUnit = ligne.bonOrganisationUnit;
-                  }
-                  result.enrollments[0].orgUnit = ligne.bonOrganisationUnit;
-                }
-                //console.log(result.programOwners[0])
-                //mise à jour de l'event saisie dans la periode  
-                for (let i = 0; i < result.enrollments[0].events.length; i++) {
-                  //console.log(result.enrollments[0].events[i].eventDate.includes('2022-07'));
-                  if (result.enrollments[0].events[i].eventDate.includes('2022-07')) {
-                    result.enrollments[0].events[i].orgUnit = ligne.bonOrganisationUnit;
-                  }
-                }
-              }
+  
+            for (let j = 0; j < result.enrollments[0].events.length; j++) {
+              if (result.enrollments[0].events[j].dataValues.filter(dataElements => dataElements.dataElement==='ToUZeYVF25W').length=1) {
+                //console.log(result.enrollments[0].events[j].dataValues.filter(dataElements => dataElements.dataElement==='ToUZeYVF25W')[0]);
+                result.enrollments[0].events[j].dataValues.filter(dataElements => dataElements.dataElement==='ToUZeYVF25W')[0].value='Non';
+                //console.log(result.enrollments[0].events[j].dataValues.filter(dataElements => dataElements.dataElement==='ToUZeYVF25W')[0]);
+              }              
             }
+            
             //console.log(result);
             //envoi de la modification
             axios.post(`${process.env.API_SOURCE}api/trackedEntityInstances`, JSON.stringify(result),
@@ -68,6 +55,7 @@ const run = () => {
                 console.log(result.trackedEntityInstance + " NOT OK")
                 //console.log(err)
               })
+              
           }
           )
           .catch(err => {
