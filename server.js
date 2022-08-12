@@ -4,7 +4,11 @@ const fs = require('fs');
 const csv = require('csv-parser');
 
 const run = () => {
-  const Authorization = process.env.Authorization
+  const Authorization = process.env.Authorization;
+  const serveur = process.env.API_SOURCE_DEV;
+  //const serveur = process.env.API_SOURCE_PROD;
+  const program_tracker = 'c9m3ufPy8D6';
+  
   //const password = process.env.PASS
   console.log('Traitement en cours ...');
   const datas = [];
@@ -20,7 +24,7 @@ const run = () => {
         const ligne = datas[index];
         //authentification et recuperation de l'objet a corriger
         //axios.get(`${process.env.API_SOURCE}api/trackedEntityInstances/${ligne.tei}/?ou=Ky2CzFdfBuO;odY5MzWb1jc&program=c9m3ufPy8D6&eventStartDate=2022-07-16&eventEndDate=2022-07-30&fields=*&pageSize=2`, {
-        axios.get(`${process.env.API_SOURCE}api/trackedEntityInstances/${ligne.tei}.json?program=c9m3ufPy8D6&fields=*`, {
+        axios.get(`${serveur}api/trackedEntityInstances/${ligne.tei}.json?program=${program_tracker}&fields=*`, {
             headers: {
             'Authorization': Authorization,
             'Content-Type': 'application/json'
@@ -52,7 +56,7 @@ const run = () => {
             }
             //console.log(result);
             //envoi de la modification
-            axios.post(`${process.env.API_SOURCE}api/trackedEntityInstances`, JSON.stringify(result),
+            axios.post(`${serveur}api/trackedEntityInstances`, JSON.stringify(result),
               //(`${process.env.API_SOURCE}api/trackedEntityInstances`, JSON.stringify(result),
               {
                 headers: {
